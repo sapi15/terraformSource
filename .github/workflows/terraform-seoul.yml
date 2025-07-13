@@ -1,0 +1,61 @@
+# workflows 명 
+name: Terraform CI/CD (seoul)
+
+# push 이벤트 발생시 작동.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'seoul/**'   # 소스 구조중 seoul 디렉토리의 소스의 push에만 적용.
+
+# 권한 설정
+permissions:
+	# 워크플로우가 GitHub의 OpenID Connect(OIDC) 토큰을 사용하여 AWS에 인증.
+  id-token: write
+  # 저장소의 콘텐츠를 읽을 수 있는 권한 부여.
+  contents: read
+
+# 작업 정의(Class 단위라고 생각하기)
+jobs:
+  terraform:
+	  # jobs의 명
+    name: Terraform Apply - Seoul
+    runs-on: ubuntu-latest          # 최신 우분투 환경으로 실행.
+    
+    # 이 jobs의 작업은 seoul 디렉토리에서 작동함을 설정. (cd seoul 생략 기능)
+    defaults:
+      run:
+        working-directory: seoul
+    
+    # 실제 작업 로직 (Method 단위라고 생각하기)
+    steps:
+        # GitHub 저장소의 코드를 워크플로우 실행 환경으로 체크아웃.
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+				# AWS 서비스에 접근하기 위한 자격 증명을 설정.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+	        # IAM 역할로 인증 및 권한 위임.
+          role-to-assume: arn:aws:iam::539247452332:role/Terraform-github-actions
+          # AWS 리전 설정.
+          aws-region: ap-northeast-2
+				
+				# Terraform CLI 도구를 워크플로우 실행 환경에 설치하고 PATH에 추가.
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+				
+				# Terraform 명령어들 실행.
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -var-file="seoul.tfvars" -input=false
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -var-file="seoul.tfvars" -auto-approve -input=false
