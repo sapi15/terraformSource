@@ -1,7 +1,7 @@
 data "terraform_remote_state" "global_outputs" {
   backend = "s3"
   config = {
-    bucket = "clipmarket-terraform-state" # 상태 파일이 저장된 S3 버킷
+    bucket = "s3-terraform-state-save" # 상태 파일이 저장된 S3 버킷
     key    = "global/terraform.tfstate"  # global 환경의 상태 파일 경로
     region = "ap-northeast-2"            # S3 버킷이 있는 리전
   }
