@@ -10,16 +10,13 @@ on:
 
 # 권한 설정
 permissions:
-	# 워크플로우가 GitHub의 OpenID Connect(OIDC) 토큰을 사용하여 AWS에 인증.
-  id-token: write
-  # 저장소의 콘텐츠를 읽을 수 있는 권한 부여.
-  contents: read
+  id-token: write   # 워크플로우가 GitHub의 OpenID Connect(OIDC) 토큰을 사용하여 AWS에 인증.
+  contents: read    # 저장소의 콘텐츠를 읽을 수 있는 권한 부여.
 
 # 작업 정의(Class 단위라고 생각하기)
 jobs:
   terraform:
-	  # jobs의 명
-    name: Terraform Apply - Seoul
+    name: Terraform Apply - Seoul   # jobs의 명  
     runs-on: ubuntu-latest          # 최신 우분투 환경으로 실행.
     
     # 이 jobs의 작업은 seoul 디렉토리에서 작동함을 설정. (cd seoul 생략 기능)
@@ -29,25 +26,19 @@ jobs:
     
     # 실제 작업 로직 (Method 단위라고 생각하기)
     steps:
-        # GitHub 저장소의 코드를 워크플로우 실행 환경으로 체크아웃.
-      - name: Checkout
+      - name: Checkout              # GitHub 저장소의 코드를 워크플로우 실행 환경으로 체크아웃.
         uses: actions/checkout@v4
-        
-				# AWS 서비스에 접근하기 위한 자격 증명을 설정.
-      - name: Configure AWS credentials
+
+      - name: Configure AWS credentials   # AWS 서비스에 접근하기 위한 자격 증명을 설정.
         uses: aws-actions/configure-aws-credentials@v4
         with:
-	        # IAM 역할로 인증 및 권한 위임.
-          role-to-assume: arn:aws:iam::539247452332:role/Terraform-github-actions
-          # AWS 리전 설정.
-          aws-region: ap-northeast-2
-				
-				# Terraform CLI 도구를 워크플로우 실행 환경에 설치하고 PATH에 추가.
-      - name: Setup Terraform
+          role-to-assume: arn:aws:iam::539247452332:role/Terraform-github-actions   # IAM 역할로 인증 및 권한 위임.
+          aws-region: ap-northeast-2    # IAM 역할로 인증 및 권한 위임.
+
+      - name: Setup Terraform           # Terraform CLI 도구를 워크플로우 실행 환경에 설치하고 PATH에 추가.
         uses: hashicorp/setup-terraform@v3
-				
-				# Terraform 명령어들 실행.
-      - name: Terraform Init
+
+      - name: Terraform Init      # Terraform 명령어들 실행.
         run: terraform init
 
       - name: Terraform Validate
