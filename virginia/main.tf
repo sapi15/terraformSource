@@ -37,4 +37,3 @@ module "virginia_instance" {
     aws = aws.virginia
   }
 }
-
