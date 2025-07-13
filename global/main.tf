@@ -34,4 +34,3 @@
 #   name = "bastion-ssm-instance-profile"
 #   role = aws_iam_role.ssm_role.name
 # }
-
