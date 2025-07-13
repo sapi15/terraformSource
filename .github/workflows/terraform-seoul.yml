@@ -32,7 +32,7 @@ jobs:
       - name: Configure AWS credentials   # AWS 서비스에 접근하기 위한 자격 증명을 설정.
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::539247452332:role/Terraform-github-actions   # IAM 역할로 인증 및 권한 위임.
+          role-to-assume: arn:aws:iam::539247452332:role/Terraform-github-actions   # IAM 역할로 인증 및 권한 위임. # IAM의 ARN 기입
           aws-region: ap-northeast-2    # IAM 역할로 인증 및 권한 위임.
 
       - name: Setup Terraform           # Terraform CLI 도구를 워크플로우 실행 환경에 설치하고 PATH에 추가.
