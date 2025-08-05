@@ -43,9 +43,9 @@
 #   value       = module.seoul_instance.pri_subnet_ids
 # }
 
-output ingress_rules {
-  value       = module.seoul_instance.ingress_rules
-}
-output egress_rules {
-  value       = module.seoul_instance.egress_rules
-}
+# output ingress_rules {
+#   value       = module.seoul_instance.ingress_rules
+# }
+# output egress_rules {
+#   value       = module.seoul_instance.egress_rules
+# }
