@@ -1,0 +1,7 @@
+<!--
+require 'db.html';
+$stmt = $pdo->query("SELECT * FROM products ORDER BY created_at DESC");
+$data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+header('Content-Type: application/json');
+echo json_encode($data, JSON_UNESCAPED_UNICODE);
+-->

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>클립마켓</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <style>
+    #slider {
+      min-width: 100%;
+      transition: transform 0.5s ease-in-out;
+    }
+    .slide {
+      min-width: 100%;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      margin: 0 4px;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .dot.active {
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+  </style>
+</head>
+<body class="bg-white text-gray-800">
+
+<!-- 오버레이 -->
+<div id="overlay" class="fixed inset-0 bg-black bg-opacity-40 hidden" style="z-index: 9998;" onclick="closeCategoryPanel()"></div>
+
+<!-- 카테고리 패널 -->
+<div id="category-panel" class="fixed top-0 right-0 h-full bg-white shadow-lg transform translate-x-full transition-transform duration-300 overflow-y-auto" style="z-index: 9999; width: 80vw; max-width: 500px;">
+  <div class="flex justify-between items-center p-4 border-b">
+    <h2 class="font-semibold text-lg">카테고리</h2>
+    <button onclick="closeCategoryPanel()" class="hover:bg-gray-200 rounded p-1">
+      <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <ul class="p-4 space-y-4 text-sm">
+    <li><strong>투데이 픽</strong></li>
+    <li class="flex items-center justify-between">색감 좋은 티셔츠 <span class="text-xs text-blue-500">🔥</span></li>
+    <li>컬러별 인기 반소매</li>
+    <li><strong>럭셔리</strong></li>
+    <li>인기 주얼리</li>
+    <li><strong>신발</strong></li>
+    <li>지금 저장한 신발</li>
+    <li><strong>상의</strong></li>
+    <li>여름 인기 카테고리</li>
+    <li><strong>기타</strong></li>
+    <li>가방, 시계, 키덜트, 캠핑 등</li>
+  </ul>
+</div>
+
+
+<!-- 상단바 -->
+  <div id="header-placeholder"></div>
+  <script>
+    fetch("header.html")
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("header-placeholder").innerHTML = data;
+      });
+  </script>
+
+<!-- 배너 영역 -->
+<div class="relative overflow-hidden w-full h-96 z-0">
+  <div id="slider" class="flex w-full h-full">
+    <div class="slide bg-cover bg-center" style="background-image: url('img/banner1.png');"></div>
+    <div class="slide bg-cover bg-center" style="background-image: url('img/banner2.png');"></div>
+    <div class="slide bg-cover bg-center" style="background-image: url('img/banner3.png');"></div>
+  </div>
+  <button id="prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full px-3 py-1">&#10094;</button>
+  <button id="next" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full px-3 py-1">&#10095;</button>
+  <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex" id="dots"></div>
+</div>
+
+<!-- 상품 출력 영역 -->
+<div class="max-w-screen-xl mx-auto px-4 py-8">
+  <div class="mb-5">
+    <h2 class="text-xl font-bold">🔥 지금 인기 상품</h2>
+    <p class="text-sm text-gray-500">실시간 등록된 최신 상품을 만나보세요!</p>
+  </div>
+  <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5"></div>
+</div>
+
+<script>
+const slider = document.getElementById("slider");
+const slides = slider.querySelectorAll(".slide");
+const dots = document.getElementById("dots");
+let index = 0;
+
+function showSlide(i) {
+  slider.style.transform = `translateX(-${i * 100}%)`;
+  dots.querySelectorAll(".dot").forEach(dot => dot.classList.remove("active"));
+  dots.children[i].classList.add("active");
+}
+
+slides.forEach((_, i) => {
+  const dot = document.createElement("div");
+  dot.className = "dot" + (i === 0 ? " active" : "");
+  dot.onclick = () => {
+    index = i;
+    showSlide(index);
+  };
+  dots.appendChild(dot);
+});
+
+document.getElementById("prev").onclick = () => {
+  index = (index - 1 + slides.length) % slides.length;
+  showSlide(index);
+};
+document.getElementById("next").onclick = () => {
+  index = (index + 1) % slides.length;
+  showSlide(index);
+};
+
+setInterval(() => {
+  index = (index + 1) % slides.length;
+  showSlide(index);
+}, 5000);
+
+showSlide(index);
+
+fetch("/api/products")
+  .then(res => res.json())
+  .then(data => {
+    console.log("서버에서 받은 상품 목록:", data); // ✅ 이 줄 추가
+    const container = document.getElementById("product-list");
+    container.innerHTML = "";
+    data.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "bg-white rounded-lg overflow-hidden shadow-sm text-xs w-[160px]";
+      card.innerHTML = `
+          <div class="relative w-full aspect-square bg-gray-100 overflow-hidden">
+          <a href="product_detail.html?id=${p.id}">
+          <img src="${p.image_url}" alt="${p.title}" class="w-full h-full object-cover rounded-t" />
+          </a>
+
+          <!-- ✅ 2. 빠른배송 배지 표시 (옵션) -->
+           ${p.fast_delivery ? `<div class="absolute top-2 left-2 text-green-600 text-[10px] font-semibold">⚡ 빠른배송</div>` : ""}
+          
+           <!-- ✅ 3. 좋아요 버튼은 오른쪽 위, z-index로 겹치지 않게 --> 
+          <button class="absolute top-2 right-2">
+            <svg class="w-4 h-4 fill-gray-400 hover:fill-black" viewBox="0 0 24 24">
+              <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.782 1.4 8.164L12 18.897l-7.334 3.859 1.4-8.164L.132 9.21l8.2-1.192z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- ✅ 4. 상품 정보: brand, title, price, likes -->
+        <div class="p-2 space-y-0.5">
+          <p class="text-black font-semibold">${p.brand || ''}</p>
+          <p class="text-gray-800 truncate text-[11px]">${p.title}</p>
+          <p class="text-[13px] font-bold text-black">
+            ${Number(p.price ?? 0).toLocaleString()}원
+          </p>
+          <p class="text-gray-500 text-[10px]">
+            관심 ${(p.likes ?? 0).toLocaleString()}
+          </p>
+        </div>
+      `;
+
+        // ✅ 바로 여기에 별 클릭 이벤트를 추가!
+        const starButton = card.querySelector("button");
+        starButton.addEventListener("click", () => {
+          fetch("/api/like", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({ product_id: p.id })
+          })
+            .then(res => res.json())
+            .then(result => {
+              alert("관심 등록 완료!");
+
+              // ⭐ 색상 바꾸기
+              const starIcon = starButton.querySelector("svg");
+              starIcon.classList.remove("fill-black");
+              starIcon.classList.add("fill-yellow-400");
+            });
+        });
+
+      container.appendChild(card);
+    });
+  });
+
+function openCategoryPanel() {
+  document.getElementById("category-panel").classList.remove("translate-x-full");
+  document.getElementById("overlay").classList.remove("hidden");
+}
+function closeCategoryPanel() {
+  document.getElementById("category-panel").classList.add("translate-x-full");
+  document.getElementById("overlay").classList.add("hidden");
+}
+</script>
+
+<!-- 상단바/script -->
+<script>
+  fetch("header.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("header-placeholder").innerHTML = data;
+
+      // ✅ 헤더가 들어간 다음에 요소들 접근해야 함
+      const username = localStorage.getItem("username");
+      const token = localStorage.getItem("token");
+
+      const userInfo = document.getElementById("user-info");
+      const myshopLink = document.getElementById("myshop-link");
+      const logoutLink = document.getElementById("logout-link");
+      const loginLink = document.getElementById("login-link");
+      const signupLink = document.getElementById("signup-link");
+
+      if (token && username) {
+        userInfo.textContent = `👤 ${username}님`;
+        myshopLink?.classList.remove("hidden");
+        logoutLink?.classList.remove("hidden");
+        loginLink?.classList.add("hidden");
+        signupLink?.classList.add("hidden");
+      }
+
+      logoutLink?.addEventListener("click", function (e) {
+        e.preventDefault();
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        location.href = "index.html";
+      });
+    });
+</script>
+
+<!-- 푸터 자리 -->
+<div id="footer-placeholder"></div>
+
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("footer-placeholder").innerHTML = data;
+    });
+</script>
+
+
+
+
+</body>
+</html>

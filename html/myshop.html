@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>내 상점</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- 상단바 자리 -->
+   <div id="header-placeholder"></div>
+
+
+  <!-- 본문 시작 -->
+  <div class="max-w-5xl mx-auto px-4 py-6 bg-white rounded-md shadow mt-6">
+    <div class="flex gap-6 items-center">
+      <div class="w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center text-4xl text-gray-400">😊</div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-bold"><span id="shop-username">상점</span></h1>
+          <span class="text-sm text-gray-500">신뢰등급 🌟🌟🌟🌟🌟</span>
+        </div>
+<div class="mt-1 text-sm text-gray-600" id="user-meta">
+</div>
+      </div>
+      <a href="upload.html" class="bg-black text-white px-4 py-2 rounded">상품 등록</a>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-4 mt-6 bg-white rounded shadow">
+    <div class="border-b flex gap-6 text-sm font-medium px-4 pt-4">
+      <button class="border-b-2 border-black pb-2">상품 <span id="product-count">0</span></button>
+      <button class="text-gray-400">상점후기 0</button>
+      <button class="text-gray-400">찜 0</button>
+      <button class="text-gray-400">팔로잉 0</button>
+      <button class="text-gray-400">팔로워 0</button>
+    </div>
+
+    <div class="p-4">
+      <div id="my-product-list" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+    </div>
+  </div>
+
+  <!-- ✅ 스크립트: header 로딩 및 로그인 처리 -->
+<script>
+  fetch("header.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("header-placeholder").innerHTML = data;
+
+      setTimeout(() => {
+        const token = localStorage.getItem("token");
+
+        // 1. 로그인 토큰 없으면 로그인 페이지로
+        if (!token) {
+          alert("로그인이 필요합니다.");
+          location.href = "login.html";
+          return;
+        }
+
+        // 2. JWT 토큰에서 사용자 이름 추출
+        const username = getUsernameFromToken(token);
+
+        // 3. 가입일 계산 및 출력
+        const joinedDaysAgo = 1377;
+        const joinedDate = new Date();
+        joinedDate.setDate(joinedDate.getDate() - joinedDaysAgo);
+        const dateString = `${joinedDate.getFullYear()}년 ${joinedDate.getMonth() + 1}월 ${joinedDate.getDate()}일`;
+
+        const userMeta = document.getElementById("user-meta");
+        if (userMeta) {
+          userMeta.innerHTML = `가입일: ${dateString} | 등록 상품수: <span id="product-count">0</span>개`;
+        }
+
+        // 4. 사용자 관련 UI 처리
+        const userInfo = document.getElementById("user-info");
+        const myshopLink = document.getElementById("myshop-link");
+        const logoutLink = document.getElementById("logout-link");
+        const loginLink = document.getElementById("login-link");
+        const signupLink = document.getElementById("signup-link");
+        const shopNameEl = document.getElementById("shop-username");
+
+        if (username) {
+          userInfo.textContent = `👤 ${username}님`;
+          shopNameEl.textContent = username;
+
+          myshopLink?.classList.remove("hidden");
+          logoutLink?.classList.remove("hidden");
+          loginLink?.classList.add("hidden");
+          signupLink?.classList.add("hidden");
+        } else {
+          userInfo.textContent = "";
+          myshopLink?.classList.add("hidden");
+          logoutLink?.classList.add("hidden");
+          loginLink?.classList.remove("hidden");
+          signupLink?.classList.remove("hidden");
+
+          if (location.pathname.includes("myshop")) {
+            alert("로그인이 필요합니다.");
+            location.href = "login.html";
+          }
+        }
+
+        // 5. 로그아웃 처리
+        logoutLink?.addEventListener("click", function (e) {
+          e.preventDefault();
+          localStorage.removeItem("token");
+          localStorage.removeItem("username");
+          location.href = "index.html";
+        });
+
+        // 6. 내 상품 목록 불러오기
+        fetch("/api/myshop", {
+          headers: { Authorization: "Bearer " + token }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error("API 오류: " + res.status);
+            return res.json();
+          })
+          .then(products => {
+            const container = document.getElementById("my-product-list");
+
+            if (!products || products.length === 0) {
+              container.innerHTML = "<p class='text-gray-500 text-sm text-center py-12'>등록한 상품이 없습니다.</p>";
+              return;
+            }
+
+            document.getElementById("product-count").textContent = products.length;
+
+products.forEach(p => {
+  const item = document.createElement("div");
+  item.className = "border rounded shadow text-sm overflow-hidden";
+
+  item.innerHTML = `
+    <a href="product_detail.html?id=${p.id}">
+      <div class="aspect-square bg-gray-100">
+        <img src="${encodeURI(p.image_url)}" alt="${p.title}" class="w-full h-full object-cover" />
+      </div>
+      <div class="p-2 space-y-1">
+        <p class="text-gray-700 font-semibold truncate">${p.title}</p>
+        <p class="text-black font-bold">${Number(p.price).toLocaleString()}원</p>
+      </div>
+    </a>
+  `;
+  container.appendChild(item);
+});
+          })
+          .catch(err => {
+            console.error("상품 목록 로딩 실패:", err);
+            alert("상품 목록을 불러올 수 없습니다. 로그인 상태나 네트워크를 확인해주세요.");
+          });
+
+      }, 100);
+    });
+
+  // JWT 토큰에서 사용자 이름 추출 함수
+  function getUsernameFromToken(token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.username || null;
+    } catch (e) {
+      return null;
+    }
+  }
+</script>
+
+
+<!-- 푸터 자리 -->
+<div id="footer-placeholder"></div>
+
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("footer-placeholder").innerHTML = data;
+    });
+</script>
+
+</body>
+</html>

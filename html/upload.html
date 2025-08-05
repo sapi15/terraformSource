@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>상품 등록 - 번개장터</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+<body class="bg-white text-gray-800">
+
+
+
+
+<!-- 상단바 -->
+  <div id="header-placeholder"></div>
+  <script>
+    fetch("header.html")
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("header-placeholder").innerHTML = data;
+      });
+  </script>
+
+
+<!-- 등록 폼 -->
+<div class="max-w-3xl mx-auto px-4 py-12 text-sm space-y-6">
+  <form id="uploadForm" enctype="multipart/form-data" class="bg-white p-6 space-y-6">
+
+
+    <div class="flex justify-start mb-4">
+      <label for="image" class="cursor-pointer flex flex-col items-center justify-center w-32 h-32 border rounded text-gray-400">
+        <img src="https://cdn-icons-png.flaticon.com/512/685/685655.png" class="w-6 h-6" alt="사진" />
+        <span class="text-xs">0/10</span>
+      </label>
+      <input type="file" id="image" name="image" accept="image/*" class="hidden" onchange="previewImage(event)">
+      <img id="imagePreview" src="" alt="미리보기" class="w-40 h-40 object-cover rounded hidden border ml-4">
+    </div>
+
+    <div class="space-y-2">
+      <label class="block font-medium" for="title">상품명</label>
+      <input type="text" id="title" name="title" class="w-full border px-4 py-2 rounded" placeholder="상품명을 입력하세요" required>
+    </div>
+
+    <div class="space-y-2">
+      <label class="block font-medium" for="category">카테고리</label>
+      <select id="category" name="category" class="w-full border px-4 py-2 rounded">
+        <option>수입명품</option>
+        <option>패션의류</option>
+        <option>패션잡화</option>
+        <option>뷰티</option>
+        <option>출산/유아동</option>
+        <option>모바일/태블릿</option>
+      </select>
+    </div>
+
+    <div class="space-y-2">
+      <label class="block font-medium" for="price">₩ 판매가격</label>
+      <input type="number" id="price" name="price" class="w-full border px-4 py-2 rounded" placeholder="가격을 입력하세요" min="0" required>
+    </div>
+
+    <div class="space-y-2">
+      <label class="block font-medium" for="description">상품 설명</label>
+      <textarea id="description" name="description" rows="5" class="w-full border px-4 py-2 rounded text-sm"
+        placeholder="- 상품명(브랜드)\n- 구매 시기\n- 사용 기간\n- 하자 여부 등"></textarea>
+    </div>
+
+    <div class="space-y-2 p-4 rounded-md">
+      <span class="block font-medium mb-2">상품 상태</span>
+      <div class="flex gap-4">
+        <button type="button" onclick="selectCondition('중고')" id="btn-used"
+          class="px-6 py-2 rounded-md border border-black bg-black text-white">중고</button>
+        <button type="button" onclick="selectCondition('새상품')" id="btn-new"
+          class="px-6 py-2 rounded-md border border-black bg-white text-black">새상품</button>
+      </div>
+      <input type="hidden" name="condition" id="condition" value="중고" />
+    </div>
+
+    <div class="text-center mt-4">
+      <button type="submit" class="bg-black text-white px-20 py-2 rounded hover:bg-gray-800 transition">판매하기</button>
+    </div>
+  </form>
+<div id="tags" class="flex flex-wrap gap-2 mt-4 px-6"></div>
+</div>
+
+<script>
+document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const fileInput = document.getElementById("image");
+  const file = fileInput.files[0];
+  if (!file) return alert("이미지를 선택해주세요");
+  
+
+  const token = localStorage.getItem("token");
+  const username = localStorage.getItem("username");
+  if (!token || !username) return alert("로그인이 필요합니다.");
+
+  const title = document.getElementById("title").value;
+  const category = document.getElementById("category").value;
+  const price = Number(document.getElementById("price").value);
+  const description = document.getElementById("description").value || "내용 없음";
+  const condition = document.getElementById("condition").value;
+  const contentType = (file.type && file.type.startsWith("image/")) ? file.type : "image/jpeg";
+
+  const submitButton = document.querySelector("button[type='submit']");
+  submitButton.disabled = true;
+  submitButton.textContent = "등록 중...";
+
+  try {
+    // 1️⃣ presigned URL 요청
+    const safeFilename = encodeURIComponent(file.name);
+
+    const uploadRes = await fetch("/api/upload", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        filename: safeFilename,
+        content_type: contentType
+      })
+    });
+
+    
+    if (!uploadRes.ok) throw new Error("Presigned URL 요청 실패");
+    const uploadData = await uploadRes.json();
+    const presignedUrl = uploadData.presigned_url;
+    const imageUrl = presignedUrl.split("?")[0];
+
+    console.log("🧪 presignedUrl:", presignedUrl);
+    console.log("📂 file:", file);
+    console.log("📄 contentType:", contentType);
+
+    
+    // 2️⃣ S3 업로드
+    const s3Res = await fetch(presignedUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+      },
+      body: file
+    });
+
+    if (!s3Res.ok) {
+      throw new Error("S3 업로드 실패: " + s3Res.statusText);
+    }
+
+    await fetchRekognitionTags(safeFilename, username);
+
+    // 3️⃣ 상품 등록
+    const saveRes = await fetch("/api/product", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title,
+        category,
+        price,
+        description,
+        condition,
+        filename: safeFilename,
+        username,
+        image_url: imageUrl
+      })
+    });
+
+    const saveData = await saveRes.json();
+    if (!saveRes.ok) throw new Error(saveData.message || "상품 저장 실패");
+
+    alert("상품 등록 완료!");
+    window.location.href = "myshop.html";
+
+  } catch (err) {
+    alert("에러 발생: " + err.message);
+    submitButton.disabled = false;
+    submitButton.textContent = "판매하기";
+  }
+});
+
+</script>
+
+
+<script>
+  function previewImage(event) {
+    const input = event.target;
+    const preview = document.getElementById('imagePreview');
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.src = e.target.result;
+        preview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  function selectCondition(type) {
+    const usedBtn = document.getElementById('btn-used');
+    const newBtn = document.getElementById('btn-new');
+    const conditionInput = document.getElementById('condition');
+    conditionInput.value = type;
+
+    if (type === '중고') {
+      usedBtn.classList.add('bg-black', 'text-white');
+      usedBtn.classList.remove('bg-white', 'text-black');
+      newBtn.classList.add('bg-white', 'text-black');
+      newBtn.classList.remove('bg-black', 'text-white');
+    } else {
+      newBtn.classList.add('bg-black', 'text-white');
+      newBtn.classList.remove('bg-white', 'text-black');
+      usedBtn.classList.add('bg-white', 'text-black');
+      usedBtn.classList.remove('bg-black', 'text-white');
+    }
+  }
+</script>
+
+
+<!-- 상단바/script -->
+<script>
+  fetch("header.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("header-placeholder").innerHTML = data;
+
+      // ✅ 헤더가 들어간 다음에 요소들 접근해야 함
+      const username = localStorage.getItem("username");
+      const token = localStorage.getItem("token");
+
+      const userInfo = document.getElementById("user-info");
+      const myshopLink = document.getElementById("myshop-link");
+      const logoutLink = document.getElementById("logout-link");
+      const loginLink = document.getElementById("login-link");
+      const signupLink = document.getElementById("signup-link");
+
+      if (token && username) {
+        userInfo.textContent = `👤 ${username}님`;
+        myshopLink?.classList.remove("hidden");
+        logoutLink?.classList.remove("hidden");
+        loginLink?.classList.add("hidden");
+        signupLink?.classList.add("hidden");
+      }
+
+      logoutLink?.addEventListener("click", function (e) {
+        e.preventDefault();
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        location.href = "index.html";
+      });
+    });
+</script>
+
+
+<script>
+  async function fetchRekognitionTags(imageName, userId) {
+    const response = await fetch("/api/rekognition-tag", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_name: imageName, user_id: userId })
+    });
+
+    if (!response.ok) {
+      console.error("태그 요청 실패");
+      return;
+    }
+
+    const data = await response.json();
+    const tagContainer = document.getElementById("tags");
+    tagContainer.innerHTML = "";
+
+    data.tags.forEach(tag => {
+      const tagBox = document.createElement("div");
+      tagBox.className = "bg-black text-white px-2 py-1 rounded mr-2 mb-2";
+      tagBox.textContent = tag;
+      tagContainer.appendChild(tagBox);
+    });
+  }
+</script>
+
+
+<!-- 푸터 자리 -->
+<div id="footer-placeholder"></div>
+
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("footer-placeholder").innerHTML = data;
+    });
+</script>
+
+</body>
+</html>

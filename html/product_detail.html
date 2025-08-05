@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>상품 상세</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script>
+    const API_BASE = 'https://ur3srs1rwi.execute-api.ap-northeast-2.amazonaws.com/default/api'; // ✅ 실제 Gateway URL
+
+    const token = localStorage.getItem('jwt'); // JWT 토큰
+
+    async function fetchProductDetail() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+      if (!id) return alert('잘못된 접근입니다.');
+
+      const res = await fetch(`${API_BASE}/product/${id}`);
+      const data = await res.json();
+      if (!res.ok) return alert(data.message || '상품 정보를 불러오지 못했습니다.');
+
+      renderProduct(data);
+    }
+
+    function renderProduct(product) {
+      document.getElementById('title').textContent = product.title;
+      document.getElementById('price').textContent = `${Number(product.price).toLocaleString()}원`;
+      document.getElementById('desc').textContent = product.description;
+      document.getElementById('category').textContent = product.category || '-';
+      document.getElementById('condition').textContent = product.condition || '-';
+      document.getElementById('created_at').textContent = new Date(product.created_at).toISOString().split('T')[0];
+
+      const imgEl = document.getElementById('main-image');
+      imgEl.src = product.image_url;
+      imgEl.alt = product.title;
+
+      // 태그 로드
+      fetchTags(product.image_url);
+    }
+
+    async function fetchTags(imageKey) {
+  const keyOnly = imageKey.split("/").slice(-2).join("/");  // 👈 위치 옮김
+
+  const res = await fetch(`${API_BASE}/rekognition-tags`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    },
+    body: JSON.stringify({ image_url: keyOnly })  // 👈 올바른 위치
+  });
+
+  const data = await res.json();
+  const container = document.getElementById('tags');
+  container.innerHTML = '';
+  (data.labels || []).forEach(tag => {
+    const el = document.createElement('span');
+    el.textContent = `#${tag}`;
+    el.className = 'bg-black text-white px-3 py-1 rounded-full text-xs';
+    container.appendChild(el);
+  });
+}
+
+
+    document.addEventListener('DOMContentLoaded', fetchProductDetail);
+  </script>
+</head>
+<body class="text-gray-800">
+
+  <!-- 상단바 -->
+  <div id="header-placeholder"></div>
+  <script>
+    fetch("header.html")
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("header-placeholder").innerHTML = data;
+      });
+  </script>
+
+<!-- 상단바/script -->
+<script>
+  fetch("header.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("header-placeholder").innerHTML = data;
+
+      // ✅ 헤더가 들어간 다음에 요소들 접근해야 함
+      const username = localStorage.getItem("username");
+      const token = localStorage.getItem("token");
+
+      const userInfo = document.getElementById("user-info");
+      const myshopLink = document.getElementById("myshop-link");
+      const logoutLink = document.getElementById("logout-link");
+      const loginLink = document.getElementById("login-link");
+      const signupLink = document.getElementById("signup-link");
+
+      if (token && username) {
+        userInfo.textContent = `👤 ${username}님`;
+        myshopLink?.classList.remove("hidden");
+        logoutLink?.classList.remove("hidden");
+        loginLink?.classList.add("hidden");
+        signupLink?.classList.add("hidden");
+      }
+
+      logoutLink?.addEventListener("click", function (e) {
+        e.preventDefault();
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        location.href = "index.html";
+      });
+    });
+</script>
+
+</script>
+<!-- ✅ 상품 상세 -->
+<div class="max-w-5xl mx-auto p-4 grid grid-cols-1 md:grid-cols-2 gap-10">
+  <!-- 이미지 -->
+  <div>
+    <img id="main-image" src="" alt="상품 이미지" class="w-full rounded" />
+  </div>
+
+  <!-- 상품 정보 -->
+  <div class="space-y-4">
+    <div class="text-sm text-gray-500">즉시 구매가</div>
+    <div class="text-3xl font-bold text-black" id="price">-</div>
+    <h1 class="text-lg font-semibold leading-tight" id="title">-</h1>
+
+    <div class="flex flex-wrap gap-2 mt-2" id="tags"></div>
+    <p class="text-sm text-gray-500" id="desc">-</p>
+
+    <div class="grid grid-cols-3 gap-4 text-sm text-gray-700 mt-4">
+      <div>
+        <div class="text-gray-400">카테고리</div>
+        <div id="category">-</div>
+      </div>
+      <div>
+        <div class="text-gray-400">상태</div>
+        <div id="condition">-</div>
+      </div>
+      <div>
+        <div class="text-gray-400">등록일</div>
+        <div id="created_at">-</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 mt-4">
+      <button class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded font-semibold">구매하기</button>
+      <button class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded font-semibold">채팅하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 푸터 자리 -->
+<div id="footer-placeholder"></div>
+
+<script>
+  fetch("footer.html")
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById("footer-placeholder").innerHTML = data;
+    });
+</script>
+
+</body>
+</html>
