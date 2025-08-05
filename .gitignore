@@ -1,0 +1,11 @@
+global/.terraform.lock.hcl
+global/.terraform/providers/registry.terraform.io/hashicorp/aws/6.0.0/windows_386/LICENSE.txt
+global/.terraform/terraform.tfstate
+global/.terraform/providers/registry.terraform.io/hashicorp/aws/6.0.0/windows_386/terraform-provider-aws_v6.0.0_x5.exe
+seoul/.terraform.lock.hcl
+seoul/.terraform/providers/registry.terraform.io/hashicorp/aws/6.0.0/windows_386/LICENSE.txt
+seoul/.terraform/terraform.tfstate
+seoul/.terraform/providers/registry.terraform.io/hashicorp/aws/6.0.0/windows_386/terraform-provider-aws_v6.0.0_x5.exe
+virginia/.terraform.lock.hcl
+virginia/.terraform/providers/registry.terraform.io/hashicorp/aws/6.0.0/windows_386/LICENSE.txt
+virginia/.terraform/providers/registry.terraform.io/hashicorp/aws/6.0.0/windows_386/terraform-provider-aws_v6.0.0_x5.exe

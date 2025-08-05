@@ -25,58 +25,94 @@ variable "seoul_nat_gw_azs" {
 variable "seoul_ingress_rule_config" {
   description = "보안 그룹에 적용할 Ingress 규칙"
   type = object({
-    pub = map(object({
+    pub = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
-    }))
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
+    })))
     proxy = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
     })))
     bastion = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
     })))
     aurora = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
+    })))
+    lambda = optional(map(object({
+      protocol  = string
+      from_port = number
+      to_port   = number
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
+    })))
+    task = optional(map(object({
+      protocol  = string
+      from_port = number
+      to_port   = number
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
     })))
   })
 }
 variable "seoul_egress_rule_config" {
   description = "보안 그룹에 적용할 egress 규칙"
   type = object({
-    pub = map(object({
+    pub = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
-    }))
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
+    })))
     proxy = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
     })))
     bastion = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
     })))
     aurora = optional(map(object({
       protocol  = string
       from_port = number
       to_port   = number
-      cidr      = string
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
+    })))
+    lambda = optional(map(object({
+      protocol  = string
+      from_port = number
+      to_port   = number
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
+    })))
+    task = optional(map(object({
+      protocol  = string
+      from_port = number
+      to_port   = number
+      cidr      = optional(string)
+      source_sg_key  = optional(string)
     })))
   })
 }
