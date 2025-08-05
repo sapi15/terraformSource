@@ -31,7 +31,7 @@ resource "aws_iam_role_policy_attachment" "ssm_policy_att" {
 
 # instance에서 사용할 수 있게 해주는 설정.
 resource "aws_iam_instance_profile" "ssm_instance_profile" {
-  name = "bastion-ssm-instance-profile"
+  # name = "bastion-ssm-instance-profile"
   role = aws_iam_role.ssm_role.name
 }
 
